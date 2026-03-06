@@ -1,0 +1,509 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Buscador de CEP por Endereço</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+            max-width: 700px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 2em;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 1em;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .campo-form {
+            margin-bottom: 15px;
+        }
+
+        .campo-form.full-width {
+            grid-column: span 2;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 5px;
+            color: #555;
+            font-weight: 600;
+            font-size: 0.95em;
+        }
+
+        label i {
+            margin-right: 5px;
+            color: #4ECDC4;
+        }
+
+        input, select {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 10px;
+            font-size: 1em;
+            transition: border-color 0.3s ease;
+            outline: none;
+        }
+
+        input:focus, select:focus {
+            border-color: #4ECDC4;
+        }
+
+        input::placeholder {
+            color: #aaa;
+            font-style: italic;
+        }
+
+        .busca-btn {
+            grid-column: span 2;
+            padding: 15px 30px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            color: white;
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1.2em;
+            font-weight: 600;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .busca-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+
+        .busca-btn:active {
+            transform: translateY(0);
+        }
+
+        .resultado-card {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 25px;
+            border-left: 5px solid #4ECDC4;
+            margin-top: 30px;
+            display: none;
+        }
+
+        .resultado-card.show {
+            display: block;
+            animation: fadeIn 0.5s ease;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .info-endereco {
+            background: white;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            border: 1px solid #e0e0e0;
+        }
+
+        .info-endereco p {
+            margin: 8px 0;
+            font-size: 1.1em;
+        }
+
+        .info-endereco strong {
+            color: #4ECDC4;
+            min-width: 100px;
+            display: inline-block;
+        }
+
+        .cep-encontrado {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #FF6B6B 0%, #4ECDC4 100%);
+            border-radius: 10px;
+            color: white;
+        }
+
+        .cep-encontrado .label {
+            font-size: 1em;
+            opacity: 0.9;
+            display: block;
+            margin-bottom: 5px;
+        }
+
+        .cep-encontrado .valor {
+            font-size: 3em;
+            font-weight: bold;
+            letter-spacing: 5px;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 30px;
+            display: none;
+        }
+
+        .loading-spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #4ECDC4;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .erro {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            padding: 15px;
+            border-radius: 10px;
+            text-align: center;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .sugestoes {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e8f4fd;
+            border-radius: 10px;
+            font-size: 0.9em;
+            color: #555;
+            display: none;
+        }
+
+        .sugestoes p {
+            margin: 5px 0;
+        }
+
+        .sugestoes i {
+            color: #4ECDC4;
+            margin-right: 5px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #eee;
+            color: #999;
+            font-size: 0.9em;
+        }
+
+        .info-box {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+            border-left: 4px solid #2196F3;
+        }
+
+        .info-box i {
+            color: #2196F3;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Buscar CEP por Endereço</h1>
+        <p class="subtitle">Preencha os dados do endereço para encontrar o CEP</p>
+
+        <div class="info-box">
+            <i>ℹ️</i> <strong>Como funciona:</strong> Preencha os campos abaixo com o máximo de informações possíveis. Quanto mais completo o endereço, mais precisa será a busca.
+        </div>
+
+        <form id="cepForm" onsubmit="event.preventDefault(); buscarCepPorEndereco();">
+            <div class="form-grid">
+                <div class="campo-form full-width">
+                    <label><i>🏠</i> Logradouro (Rua/Avenida):</label>
+                    <input type="text" id="logradouro" placeholder="Ex: Avenida Paulista, Rua Augusta..." required>
+                </div>
+
+                <div class="campo-form">
+                    <label><i>🔢</i> Número:</label>
+                    <input type="text" id="numero" placeholder="Nº (opcional)">
+                </div>
+
+                <div class="campo-form">
+                    <label><i>📍</i> Bairro:</label>
+                    <input type="text" id="bairro" placeholder="Ex: Centro, Copacabana..." required>
+                </div>
+
+                <div class="campo-form">
+                    <label><i>🏙️</i> Cidade:</label>
+                    <input type="text" id="cidade" placeholder="Ex: São Paulo, Rio..." required>
+                </div>
+
+                <div class="campo-form">
+                    <label><i>🗺️</i> Estado (UF):</label>
+                    <select id="estado" required>
+                        <option value="">Selecione o estado</option>
+                        <option value="AC">Acre (AC)</option>
+                        <option value="AL">Alagoas (AL)</option>
+                        <option value="AP">Amapá (AP)</option>
+                        <option value="AM">Amazonas (AM)</option>
+                        <option value="BA">Bahia (BA)</option>
+                        <option value="CE">Ceará (CE)</option>
+                        <option value="DF">Distrito Federal (DF)</option>
+                        <option value="ES">Espírito Santo (ES)</option>
+                        <option value="GO">Goiás (GO)</option>
+                        <option value="MA">Maranhão (MA)</option>
+                        <option value="MT">Mato Grosso (MT)</option>
+                        <option value="MS">Mato Grosso do Sul (MS)</option>
+                        <option value="MG">Minas Gerais (MG)</option>
+                        <option value="PA">Pará (PA)</option>
+                        <option value="PB">Paraíba (PB)</option>
+                        <option value="PR">Paraná (PR)</option>
+                        <option value="PE">Pernambuco (PE)</option>
+                        <option value="PI">Piauí (PI)</option>
+                        <option value="RJ">Rio de Janeiro (RJ)</option>
+                        <option value="RN">Rio Grande do Norte (RN)</option>
+                        <option value="RS">Rio Grande do Sul (RS)</option>
+                        <option value="RO">Rondônia (RO)</option>
+                        <option value="RR">Roraima (RR)</option>
+                        <option value="SC">Santa Catarina (SC)</option>
+                        <option value="SP">São Paulo (SP)</option>
+                        <option value="SE">Sergipe (SE)</option>
+                        <option value="TO">Tocantins (TO)</option>
+                    </select>
+                </div>
+
+                <button type="submit" class="busca-btn">
+                    <i>🔎</i> Buscar CEP
+                </button>
+            </div>
+        </form>
+
+        <div class="loading" id="loading">
+            <div class="loading-spinner"></div>
+            <p>Buscando o CEP para este endereço...</p>
+            <small>Isso pode levar alguns segundos</small>
+        </div>
+
+        <div class="erro" id="erro"></div>
+
+        <div class="sugestoes" id="sugestoes">
+            <p><i>💡</i> <strong>Sugestões:</strong></p>
+            <p id="sugestoesTexto"></p>
+        </div>
+
+        <div class="resultado-card" id="resultado">
+            <h3>📋 Endereço informado:</h3>
+            <div class="info-endereco">
+                <p><strong>Logradouro:</strong> <span id="resultLogradouro"></span></p>
+                <p><strong>Número:</strong> <span id="resultNumero"></span></p>
+                <p><strong>Bairro:</strong> <span id="resultBairro"></span></p>
+                <p><strong>Cidade:</strong> <span id="resultCidade"></span></p>
+                <p><strong>Estado:</strong> <span id="resultEstado"></span></p>
+            </div>
+            
+            <div class="cep-encontrado">
+                <span class="label">📮 CEP encontrado:</span>
+                <span class="valor" id="cepEncontrado"></span>
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Desenvolvido para atividade acadêmica</p>
+            <p><small>Consulta via API pública - Resultados podem variar</small></p>
+        </div>
+    </div>
+
+    <script>
+        // Lista de APIs para consulta reversa de CEP
+        const APIs = [
+            {
+                nome: "ViaCEP",
+                url: (logradouro, cidade, estado) => 
+                    `https://viacep.com.br/ws/${estado}/${cidade}/${logradouro}/json/`,
+                processar: (dados) => {
+                    if (dados.length > 0) {
+                        return {
+                            cep: dados[0].cep,
+                            logradouro: dados[0].logradouro,
+                            bairro: dados[0].bairro,
+                            cidade: dados[0].localidade,
+                            estado: dados[0].uf
+                        };
+                    }
+                    return null;
+                }
+            }
+        ];
+
+        async function buscarCepPorEndereco() {
+            // Coleta os valores do formulário
+            const logradouro = document.getElementById('logradouro').value.trim();
+            const numero = document.getElementById('numero').value.trim();
+            const bairro = document.getElementById('bairro').value.trim();
+            const cidade = document.getElementById('cidade').value.trim();
+            const estado = document.getElementById('estado').value;
+
+            // Validações básicas
+            if (!logradouro || !bairro || !cidade || !estado) {
+                mostrarErro('Por favor, preencha todos os campos obrigatórios!');
+                return;
+            }
+
+            // Mostra loading
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('erro').style.display = 'none';
+            document.getElementById('sugestoes').style.display = 'none';
+            document.getElementById('resultado').classList.remove('show');
+
+            try {
+                // Prepara o logradouro para a busca (remove palavras comuns e formata)
+                let logradouroBusca = logradouro
+                    .replace(/\b(rua|avenida|av|travessa|alameda|praça|praca)\b/gi, '')
+                    .trim();
+
+                // Se o logradouro ficou vazio, usa o original
+                if (!logradouroBusca) {
+                    logradouroBusca = logradouro;
+                }
+
+                // Tenta a primeira API (ViaCEP)
+                const api = APIs[0];
+                const url = api.url(
+                    encodeURIComponent(logradouroBusca),
+                    encodeURIComponent(cidade),
+                    estado
+                );
+
+                console.log('Buscando:', url);
+
+                const response = await fetch(url);
+                const dados = await response.json();
+
+                // Esconde loading
+                document.getElementById('loading').style.display = 'none';
+
+                // Processa o resultado
+                if (dados.length > 0) {
+                    // Filtra pelo bairro se possível
+                    let resultado = dados.find(item => 
+                        item.bairro && item.bairro.toLowerCase().includes(bairro.toLowerCase())
+                    ) || dados[0];
+
+                    // Atualiza os campos do resultado
+                    document.getElementById('resultLogradouro').textContent = 
+                        resultado.logradouro || logradouro;
+                    document.getElementById('resultNumero').textContent = numero || 'Não informado';
+                    document.getElementById('resultBairro').textContent = 
+                        resultado.bairro || bairro;
+                    document.getElementById('resultCidade').textContent = 
+                        resultado.localidade || cidade;
+                    document.getElementById('resultEstado').textContent = estado;
+                    
+                    // Formata e mostra o CEP
+                    const cep = resultado.cep.replace(/\D/g, '');
+                    const cepFormatado = cep.replace(/^(\d{5})(\d{3})$/, '$1-$2');
+                    document.getElementById('cepEncontrado').textContent = cepFormatado;
+
+                    // Mostra o resultado
+                    document.getElementById('resultado').classList.add('show');
+
+                    // Se encontrou múltiplos resultados, mostra sugestões
+                    if (dados.length > 1) {
+                        const sugestoes = dados.slice(0, 3).map(item => 
+                            `${item.logradouro}, ${item.bairro} - CEP: ${item.cep}`
+                        ).join('<br>');
+                        
+                        document.getElementById('sugestoesTexto').innerHTML = 
+                            `Encontramos ${dados.length} resultados. Os principais são:<br>${sugestoes}`;
+                        document.getElementById('sugestoes').style.display = 'block';
+                    }
+
+                } else {
+                    mostrarErro('Nenhum CEP encontrado para este endereço. Tente com informações mais precisas.');
+                }
+
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                console.error('Erro:', error);
+                mostrarErro('Erro ao buscar o CEP. Verifique sua conexão e tente novamente.');
+            }
+        }
+
+        function mostrarErro(mensagem) {
+            const erroDiv = document.getElementById('erro');
+            erroDiv.textContent = mensagem;
+            erroDiv.style.display = 'block';
+        }
+
+        // Função para sugerir exemplos de busca
+        function sugerirExemplos() {
+            const exemplos = [
+                { rua: 'Avenida Paulista', numero: '1000', bairro: 'Bela Vista', cidade: 'São Paulo', estado: 'SP' },
+                { rua: 'Rua da Assembleia', numero: '10', bairro: 'Centro', cidade: 'Rio de Janeiro', estado: 'RJ' },
+                { rua: 'Rua Érico Veríssimo', numero: '300', bairro: 'Santa Felicidade', cidade: 'Curitiba', estado: 'PR' }
+            ];
+            
+            const exemplo = exemplos[Math.floor(Math.random() * exemplos.length)];
+            
+            // Não preenche automaticamente, apenas mostra no placeholder
+            document.getElementById('logradouro').placeholder = `Ex: ${exemplo.rua}`;
+            document.getElementById('bairro').placeholder = `Ex: ${exemplo.bairro}`;
+            document.getElementById('cidade').placeholder = `Ex: ${exemplo.cidade}`;
+        }
+
+        // Carrega um exemplo ao iniciar
+        window.onload = function() {
+            sugerirExemplos();
+        };
+
+        // Permite buscar pressionando Enter
+        document.getElementById('cepForm').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                buscarCepPorEndereco();
+            }
+        });
+    </script>
+</body>
+</html>
